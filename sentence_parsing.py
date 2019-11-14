@@ -4,7 +4,7 @@ from word2number import w2n
 def extract_condition_from_sentence(sentence):
     grammar = r"""
 NUMBER_CLAUSE: {<CD><NN|NNS>}
-VALIDATION: {<RB|JJ><VBD|VBN>}
+VALIDATION: {<RB|JJ><VBD|VBN|NN|NNS>}
 SingleCondition: {<NUMBER_CLAUSE>(<VBZ|VBP>)<JJ><CC><VALIDATION>}
 NothingCondition: {<NN><VBZ><JJ>}
 """
@@ -34,14 +34,16 @@ NothingCondition: {<NN><VBZ><JJ>}
     return data
 
 
-sentences = [
-    'One number is correct and well placed',
-    'One number is correct but wrong placed',
-    'Two numbers are correct but wrong placed',
-    'Nothing is correct',
-    'One number is correct but wrong placed',
-    "One number is correct and well placed and two numbers are correct but wrong placed"
-]
+if __name__ == '__main__':
+    sentences = [
+        'One number is correct and well placed',
+        'One number is correct but wrong placed',
+        'One number is correct but wrong place',
+        'Two numbers are correct but wrong placed',
+        'Nothing is correct',
+        'One number is correct but wrong placed',
+        "One number is correct and well placed and two numbers are correct but wrong placed"
+    ]
 
-for sentence in sentences:
-    print(sentence, extract_condition_from_sentence(sentence))
+    for sentence in sentences:
+        print(sentence, extract_condition_from_sentence(sentence))

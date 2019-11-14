@@ -1,5 +1,6 @@
 def exclude_number_from_place(possibilities, digit, place):
-    possibilities[place].remove(digit)
+    if digit in possibilities[place]:
+        possibilities[place].remove(digit)
 
 
 def exclude_number(possibilities, digit):
@@ -71,11 +72,13 @@ def crack_code(constraints):
 
     return bruteforace_place(possibilities, constraints, [])
 
-result = crack_code([
-    {'digits': [6,8,2], 'valid_and_placed': 1, 'valid_on_invalid_places': 0},
-    {'digits': [6,1,4], 'valid_and_placed': 0, 'valid_on_invalid_places': 1},
-    {'digits': [2,0,6], 'valid_and_placed': 0, 'valid_on_invalid_places': 2},
-    {'digits': [7,3,8], 'valid_and_placed': 0, 'valid_on_invalid_places': 0},
-    {'digits': [8,7,0], 'valid_and_placed': 0, 'valid_on_invalid_places': 1}
-])
-print(result)
+
+if __name__ == '__main__':
+    result = crack_code([
+        {'digits': [6,8,2], 'valid_and_placed': 1, 'valid_on_invalid_places': 0},
+        {'digits': [6,1,4], 'valid_and_placed': 0, 'valid_on_invalid_places': 1},
+        {'digits': [2,0,6], 'valid_and_placed': 0, 'valid_on_invalid_places': 2},
+        {'digits': [7,3,8], 'valid_and_placed': 0, 'valid_on_invalid_places': 0},
+        {'digits': [8,7,0], 'valid_and_placed': 0, 'valid_on_invalid_places': 1}
+    ])
+    print(result)

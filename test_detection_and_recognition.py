@@ -102,5 +102,6 @@ def get_textual_connstraints_from_image(image_path):
     return ocr(numbers_path, text_path)
 
 
-imagePath = os.getcwd() + '/images/will_you_crack_the_code.jpg'
-print(get_textual_connstraints_from_image(imagePath))
+if __name__ == '__main__':
+    imagePath = os.getcwd() + '/images/will_you_crack_the_code.jpg'
+    print(get_textual_connstraints_from_image(imagePath))
