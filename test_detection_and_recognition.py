@@ -3,6 +3,14 @@ import numpy as np
 import pytesseract
 import argparse
 import cv2, os, imutils
+import os
+
+try:
+    from PIL import Image
+except ImportError:
+    import Image
+import pytesseract
+
 
 # See https://www.pyimagesearch.com/2018/09/17/opencv-ocr-and-text-recognition-with-tesseract/
 
@@ -34,7 +42,7 @@ horizontalStructure = cv2.getStructuringElement(cv2.MORPH_RECT, (horizontal_size
 horizontal = cv2.erode(horizontal, horizontalStructure)
 horizontal = cv2.dilate(horizontal, horizontalStructure, iterations=2)
 #horizontal = cv2.dilate(horizontal, horizontalStructure)
-cv2.imwrite('horizontal.jpg', horizontal)
+#cv2.imwrite('horizontal.jpg', horizontal)
 
 row_white_counts = np.count_nonzero(horizontal, axis=1)
 rows_with_horizontal_line_indexes = np.where((row_white_counts > 0.1*cols) & (row_white_counts < 0.7*cols))[0]
@@ -46,13 +54,23 @@ horizontal_copy = np.copy(horizontal)
 horizontal_copy[rows_with_horizontal_line_indexes2] = 255
 cv2.imwrite('horizontal3.jpg', horizontal_copy)
 
-low_border_row = rows_with_horizontal_line_indexes2[-1]
-upper_border_row=rows_with_horizontal_line_indexes2[0]
+n_diff = np.diff(np.copy(horizontal))
+cv2.imwrite('n_diff.jpg', n_diff)
+border_cols = np.where(np.count_nonzero(n_diff, axis=0)>10)[0]
 
-horizontal = horizontal[upper_border_row:low_border_row+1]
-bw=bw[upper_border_row:low_border_row+1]
-grayImage=grayImage[upper_border_row:low_border_row+1]
-cv2.imwrite('horizontal2.jpg', horizontal)
+
+end_border_row = rows_with_horizontal_line_indexes2[-1]
+start_border_row=rows_with_horizontal_line_indexes2[0]
+
+horizontal[:,border_cols[1]:]=0
+
+horizontal = horizontal[start_border_row:end_border_row+1,border_cols[0]:]
+bw=bw[start_border_row:end_border_row+1,border_cols[0]:]
+grayImage=grayImage[start_border_row:end_border_row+1,border_cols[0]:]
+
+cv2.imwrite('horizontal0.jpg', horizontal)
+horizontal = cv2.blur(horizontal, (7,7))
+cv2.imwrite('horizontal.jpg', horizontal)
 
 
 vertical = np.copy(bw)
@@ -63,6 +81,8 @@ verticalStructure = cv2.getStructuringElement(cv2.MORPH_RECT, (1, verticalsize))
 # Apply morphology operations
 vertical = cv2.erode(vertical, verticalStructure)
 vertical = cv2.dilate(vertical, verticalStructure, iterations=2)
+vertical = cv2.blur(vertical, (7,7))
+
 #vertical = cv2.dilate(vertical, verticalStructure)
 #vertical = cv2.dilate(vertical, verticalStructure)
 cv2.imwrite('vertical.jpg', vertical)
@@ -72,147 +92,64 @@ cv2.imwrite('vertical.jpg', vertical)
 columns = np.count_nonzero(vertical == 255, axis=0)
 
 gray_copy = np.copy(grayImage)
-horizontal_mask = (horizontal == 255)
+horizontal_mask = (horizontal > 0)
 gray_copy[horizontal_mask] = 255
 cv2.imwrite('gray_wo_horizontal.jpg', gray_copy)
 
-vertical_mask =  (vertical == 255)
+vertical_mask =  (vertical > 0)
 gray_copy[vertical_mask] = 255
 cv2.imwrite('gray_wo_horizontal_and_vertical.jpg', gray_copy)
 
+numbers = gray_copy[:,:border_cols[1]-border_cols[0] - 5]
+numbers[numbers > 150] = 255
+# cv2.imwrite('numbers_line1.png', numbers[:rows_with_horizontal_line_indexes2[2]-start_border_row])
+# cv2.imwrite('numbers_line2.png', numbers[rows_with_horizontal_line_indexes2[2]-start_border_row:rows_with_horizontal_line_indexes2[3]-start_border_row])
+# cv2.imwrite('numbers_line3.png', numbers[rows_with_horizontal_line_indexes2[3]-start_border_row:rows_with_horizontal_line_indexes2[4]-start_border_row])
+# cv2.imwrite('numbers_line4.png', numbers[rows_with_horizontal_line_indexes2[4]-start_border_row:rows_with_horizontal_line_indexes2[5]-start_border_row])
+# cv2.imwrite('numbers_line5.png', numbers[rows_with_horizontal_line_indexes2[5]-start_border_row])
+cv2.imwrite('gray_wo_horizontal_and_vertical.jpg', gray_copy)
+cv2.imwrite('numbers.png', numbers)
+
+# # Find contours in the image
+# numbers_copy = numbers.copy()
+# canny_output = cv2.Canny(numbers_copy, 50, 150)
+#
+# ctrs, hier = cv2.findContours(canny_output, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+#
+# # Get rectangles contains each contour
+# rects = [cv2.boundingRect(ctr) for ctr in ctrs]
+# for index, rect in enumerate(rects):
+#     # Draw the rectangles
+#     cv2.rectangle(numbers_copy, (rect[0], rect[1]), (rect[0] + rect[2], rect[1] + rect[3]), (0, 255, 0), 3)
+#     filename = f'number_{index}.png'
+#     cv2.imwrite(filename, numbers[rect[1]:rect[1]+rect[3], rect[0]:rect[0]+rect[2]])
+#     print(pytesseract.image_to_string(Image.open(os.getcwd() + '/' + filename)))
+# cv2.imwrite('numbers_copy.png', numbers_copy)
+
+
+
+cv2.imwrite('numbers.png', numbers)
+cv2.imwrite('text.png', gray_copy[:,border_cols[1]-border_cols[0] - 5:])
+
+
+
 # choose the most left vertical and crop gray_copy
 
+# print(pytesseract.image_to_string(Image.open(os.getcwd() + '/numbers_line1.png')))
+# print(pytesseract.image_to_string(Image.open(os.getcwd() + '/numbers_line2.png')))
+# print(pytesseract.image_to_string(Image.open(os.getcwd() + '/numbers_line3.png')))
+# print(pytesseract.image_to_string(Image.open(os.getcwd() + '/numbers_line4.png')))
+# print(pytesseract.image_to_string(Image.open(os.getcwd() + '/numbers_line5.png')))
+print('============================')
+number_lines_str = pytesseract.image_to_string(Image.open(os.getcwd() + '/numbers.png'), config=("--psm 6"))
+print(number_lines_str)
+number_lines = [line.replace(' ', '') for line in number_lines_str.split("\n")]
+number_lines = [[int(ch) for ch in line] for line in number_lines if len(line) > 0]
+print(number_lines)
+print('============================')
+text_lines_str = pytesseract.image_to_string(Image.open(os.getcwd() + '/text.png'))
+print(text_lines_str)
+text_lines = [line.strip() for line in text_lines_str.split("\n") if len(line.strip()) > 0]
+print(text_lines)
 
-exit(0)
-
-edges = cv2.Canny(grayImage,50,150,apertureSize = 3)
-(thresh, blackAndWhiteImage) = cv2.threshold(grayImage, 127, 255, cv2.THRESH_BINARY)
-cv2.imwrite('edges-50-150.jpg',blackAndWhiteImage)
-lines = cv2.HoughLinesP(edges,1,np.pi/180,100,50,15)
-for rho,theta in lines[0]:
-    a = np.cos(theta)
-    b = np.sin(theta)
-    x0 = a*rho
-    y0 = b*rho
-    x1 = int(x0 + 1000*(-b))
-    y1 = int(y0 + 1000*(a))
-    x2 = int(x0 - 1000*(-b))
-    y2 = int(y0 - 1000*(a))
-
-    cv2.line(image,(x1,y1),(x2,y2),(0,0,255),2)
-
-cv2.imwrite('houghlines3.jpg',image)
-# lines = cv2.HoughLinesP(image=edges,rho=0.02,theta=np.pi/500, threshold=10,lines=np.array([]), minLineLength=minLineLength,maxLineGap=100)
-
-#cv2.imshow('gray', grayImage)
-(thresh, blackAndWhiteImage) = cv2.threshold(grayImage, 127, 255, cv2.THRESH_BINARY)
-#cv2.imshow('black_white', blackAndWhiteImage)
-
-# smooth the image using a 3x3 Gaussian, then apply the blackhat
-# morphological operator to find dark regions on a light background
-# gray = cv2.GaussianBlur(grayImage, (5, 5), 0)
-# blackhat = cv2.morphologyEx(gray, cv2.MORPH_BLACKHAT, rectKernel)
-# cv2.imshow('blackhat', blackAndWhiteImage)
-
-
-kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (9,9))
-dilate = cv2.dilate(thresh, kernel, iterations=4)
-cv2.imshow('dilate', dilate)
-cv2.waitKey(0)
-cnts = cv2.findContours(dilate, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-cnts = cnts[0] if len(cnts) == 2 else cnts[1]
-
-
-print("Found %d objects." % len(cnts))
-for (i, c) in enumerate(cnts):
-    print("\tSize of contour %d: %d" % (i, len(c)))
-
-
-# cv2.drawContours(image = image,
-#                  contours = contours,
-#                  contourIdx = -1,
-#                  color = (0, 0, 255),
-#                  thickness = 5)
-
-ROI_number = 0
-for c in cnts:
-    area = cv2.contourArea(c)
-    if area > 10000:
-        x,y,w,h = cv2.boundingRect(c)
-        cv2.rectangle(image, (x, y), (x + w, y + h), (36,255,12), 3)
-        # ROI = image[y:y+h, x:x+w]
-        # cv2.imwrite('ROI_{}.png'.format(ROI_number), ROI)
-        # ROI_number += 1
-
-cv2.imshow('thresh', thresh)
-cv2.imshow('dilate', dilate)
-cv2.imshow('image', image)
-cv2.waitKey()
-cv2.imshow('original', image)
-
-cv2.waitKey(0)
-
-# # compute the Scharr gradient of the blackhat image and scale the
-# # result into the range [0, 255]
-# gradX = cv2.Sobel(blackhat, ddepth=cv2.CV_32F, dx=1, dy=0, ksize=-1)
-# gradX = np.absolute(gradX)
-# (minVal, maxVal) = (np.min(gradX), np.max(gradX))
-# gradX = (255 * ((gradX - minVal) / (maxVal - minVal))).astype("uint8")
-#
-# # apply a closing operation using the rectangular kernel to close
-# # gaps in between letters -- then apply Otsu's thresholding method
-# gradX = cv2.morphologyEx(gradX, cv2.MORPH_CLOSE, rectKernel)
-# thresh = cv2.threshold(gradX, 0, 255, cv2.THRESH_BINARY | cv2.THRESH_OTSU)[1]
-# #cv2.imshow('thresh', thresh)
-#
-# # perform another closing operation, this time using the square
-# # kernel to close gaps between lines of the MRZ, then perform a
-# # series of erosions to break apart connected components
-# thresh2 = cv2.morphologyEx(thresh, cv2.MORPH_CLOSE, sqKernel)
-# thresh2 = cv2.erode(thresh2, None, iterations=4)
-# #cv2.imshow('thresh2', thresh2)
-# #cv2.waitKey(0)
-#
-# p = int(image.shape[1] * 0.05)
-# thresh[:, 0:p] = 0
-# thresh[:, image.shape[1] - p:] = 0
-# thresh2[:, 0:p] = 0
-# thresh2[:, image.shape[1] - p:] = 0
-#
-# for (im, name) in [ (thresh2, 'thresh2'), (thresh, 'thresh'), (blackhat, 'blackhat'), (grayImage, 'gray'),  (image, 'original')]:
-#     cnts = cv2.findContours(im.copy(), cv2.RETR_EXTERNAL,
-#                             cv2.CHAIN_APPROX_SIMPLE)[-2]
-#     cnts = imutils.grab_contours(cnts)
-#     cnts = sorted(cnts, key=cv2.contourArea, reverse=True)
-#
-#     # loop over the contours
-#     roi = None
-#     for c in cnts:
-#         # compute the bounding box of the contour and use the contour to
-#         # compute the aspect ratio and coverage ratio of the bounding box
-#         # width to the width of the image
-#         (x, y, w, h) = cv2.boundingRect(c)
-#         ar = w / float(h)
-#         crWidth = w / float(gray.shape[1])
-#
-#         # check to see if the aspect ratio and coverage width are within
-#         # acceptable criteria
-#         if ar > 5 and crWidth > 0.75:
-#             # pad the bounding box since we applied erosions and now need
-#             # to re-grow it
-#             pX = int((x + w) * 0.03)
-#             pY = int((y + h) * 0.03)
-#             (x, y) = (x - pX, y - pY)
-#             (w, h) = (w + (pX * 2), h + (pY * 2))
-#
-#             # extract the ROI from the image and draw a bounding box
-#             # surrounding the MRZ
-#             roi = im[y:y + h, x:x + w].copy()
-#             cv2.rectangle(im, (x, y), (x + w, y + h), (0, 255, 0), 2)
-#             break
-#
-#     # show the output images
-#     cv2.imshow(name, im)
-#     cv2.imshow(name + " ROI", roi)
-#
-# cv2.waitKey(0)
+assert len(number_lines) == len(text_lines)
