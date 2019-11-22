@@ -1,6 +1,7 @@
 from test_detection_and_recognition import get_textual_connstraints_from_image
 from sentence_parsing import extract_condition_from_sentence
-from crack_code import crack_code
+#from crack_code import crack_code
+from csp import backtrace_search, CSP
 
 image_path = 'images/will_you_crack_the_code.jpg'
 constraints = get_textual_connstraints_from_image(image_path)
@@ -10,4 +11,8 @@ for constraint in constraints:
     constraint['valid_on_invalid_places'] = data['valid_on_invalid_places']
 
 print(constraints)
-print(crack_code(constraints))
+digits_num = len(constraints[0]['digits'])
+domains = {i: list(range(10)) for i in range(digits_num)}
+csp = CSP(constraints, list(range(digits_num)), domains)
+
+print(backtrace_search(csp, {}))
