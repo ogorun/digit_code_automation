@@ -1,7 +1,7 @@
 import random, json, glob
 from csp import CSP, backtrace_search, print_assignment, is_conflict
-from sentence_parsing import constraint2sentence
-from test_detection_and_recognition import constraint2image
+from sentence_parsing import constraint2sentence, extract_condition_from_sentence
+from test_detection_and_recognition import constraint2image, get_textual_connstraints_from_image
 
 
 def n_digits(n):
@@ -35,11 +35,23 @@ def generate_code_csp(code = None, constraints = None):
     return CSP(constraints, list(range(digits_num)), domains), code
 
 
-def generate_image(constraints):
-    a = 1
+def solve_problem_from_image_file(image_path):
+    constraints = get_textual_connstraints_from_image(image_path)
+    for constraint in constraints:
+        data = extract_condition_from_sentence(constraint['sentence'])
+        constraint['valid_and_placed'] = data['valid_and_placed']
+        constraint['valid_on_invalid_places'] = data['valid_on_invalid_places']
+
+    print(constraints)
+    digits_num = len(constraints[0]['digits'])
+    domains = {i: list(range(10)) for i in range(digits_num)}
+    csp = CSP(constraints, list(range(digits_num)), domains)
+
+    return backtrace_search(csp, {})
+
 
 if __name__ == '__main__':
-    to_generate = True
+    to_generate = False
 
     if to_generate:
         for i in range(10):
@@ -62,13 +74,15 @@ if __name__ == '__main__':
             print_assignment(result)
             with open(f"generated/{file_base_name}.json", 'w') as fh:
                 json.dump({"code":code, "constraints": csp.constraints, "image": image_file, "result": result}, fh)
-
-
-
+            result_from_image = solve_problem_from_image_file(image_file)
+            print(result, result_from_image, result == result_from_image)
     else:
         for filepath in glob.glob('generated/*.json'):
+            # if not filepath.endswith('/2064.json'):
+            #     continue
             problem = json.load(open(filepath))
             print(problem)
             csp, code = generate_code_csp(problem['code'], problem['constraints'])
             result = backtrace_search(csp, {})
-            print(result)
+            result_from_image = solve_problem_from_image_file(problem['image'])
+            print(result, result_from_image, result == result_from_image)
