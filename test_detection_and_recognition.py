@@ -1,4 +1,4 @@
-import numpy as np, cv2, os, pytesseract
+import numpy as np, cv2, os, pytesseract, textwrap
 try:
     from PIL import Image
 except ImportError:
@@ -100,6 +100,35 @@ def get_textual_connstraints_from_image(image_path):
 
     numbers_path, text_path = detect_numbers_and_text_areas(image)
     return ocr(numbers_path, text_path)
+
+
+def constraint2image(constraints, filename):
+    image = cv2.imread('images/will_you_crack_the_code_base.jpg')
+    digits_num = len(constraints[0]['digits'])
+
+    cv2.putText(image, 'WILL YOU CRACK THE CODE?', (180, 225), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0,0,0), 2)
+    cv2.putText(image, 'CODE', (60, 475), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0,0,0), 2)
+
+    # squares for final code
+    left = 100 - 20*digits_num
+    for i in range(digits_num):
+        cv2.rectangle(image, (left + i*40, 400), (left+(i+1)*40, 440), (0,0,0), 2)
+
+    # constraint lines
+    left = 280 - 20*digits_num
+    top = 388 - len(constraints)*25
+    for index, constraint in enumerate(constraints):
+        for i in range(digits_num):
+            cv2.rectangle(image, (left + i*40, index*50 + top), (left + (i+1)*40, index*50 + top + 40), (0,0,0), 2)
+            cv2.putText(image, str(constraint['digits'][i]), (left + 10 + i*40, index*50 + top + 30), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0,0,0), 2)
+        text = textwrap.wrap(constraint['sentence'], 39)
+        top_indent = 20 if len(text) == 1 else 20-(len(text)-1)*10
+        for line_index, line in enumerate(text):
+            cv2.putText(image, line, (365, index*50 + top + top_indent + 20*line_index), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,0,0), 2)
+
+    filepath = f"generated/{filename}.jpg"
+    cv2.imwrite(filepath, image)
+    return filepath
 
 
 if __name__ == '__main__':

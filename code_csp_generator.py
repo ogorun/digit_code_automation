@@ -1,6 +1,7 @@
 import random, json, glob
 from csp import CSP, backtrace_search, print_assignment, is_conflict
-from word2number.w2n import american_number_system
+from sentence_parsing import constraint2sentence
+from test_detection_and_recognition import constraint2image
 
 
 def n_digits(n):
@@ -23,10 +24,10 @@ def generate_constraint(code):
 
 def generate_code_csp(code = None, constraints = None):
     if code is None:
-        code = n_digits(random.randint(3   ,5))
+        code = n_digits(random.randint(3, 4))
 
     if constraints is None:
-        constraints_num = random.randint(4,6)
+        constraints_num = random.randint(4, 6)
         constraints = [generate_constraint(code) for i in range(constraints_num)]
 
     digits_num = len(code)
@@ -34,31 +35,8 @@ def generate_code_csp(code = None, constraints = None):
     return CSP(constraints, list(range(digits_num)), domains), code
 
 
-def num2word(num):
-    return [word for word in american_number_system if american_number_system[word] == num][0]
-
-
-def number_constraint2sentence(number, is_right_placed):
-    assert number >= 0
-    number_word = num2word(number)
-    number_word_descriptor = 'number' + ('s' if  number > 1 else '')
-    verb = ('are' if number > 1 else 'is')
-    conjunction = ('and' if is_right_placed else 'but')
-    place_expression = ('well placed' if is_right_placed else 'wrong placed')
-    return ' '.join([number_word, number_word_descriptor, verb, 'correct', conjunction, place_expression])
-
-
-def constraint2sentence(constraint):
-    subsentences = []
-    if constraint['valid_and_placed'] == 0 and constraint['valid_on_invalid_places'] == 0:
-        return 'Nothing is correct'
-    if constraint['valid_and_placed'] > 0:
-        subsentences.append(number_constraint2sentence(constraint['valid_and_placed'], True))
-    if constraint['valid_on_invalid_places'] > 0:
-        subsentences.append(number_constraint2sentence(constraint['valid_on_invalid_places'], False))
-    sentence = ' and '.join(subsentences)
-    return sentence.capitalize()
-
+def generate_image(constraints):
+    a = 1
 
 if __name__ == '__main__':
     to_generate = True
@@ -76,12 +54,16 @@ if __name__ == '__main__':
                 constraint['sentence'] = constraint2sentence(constraint)
                 print(constraint)
 
+            file_base_name = ''.join([str(digit) for digit in code])
+            image_file = constraint2image(csp.constraints, file_base_name)
             result = backtrace_search(csp, {})
             print('----------')
             print(code)
             print_assignment(result)
-            with open(f"generated/{''.join([str(digit) for digit in code])}.json", 'w') as fh:
-                json.dump({"code":code, "constraints": csp.constraints, "result": result}, fh)
+            with open(f"generated/{file_base_name}.json", 'w') as fh:
+                json.dump({"code":code, "constraints": csp.constraints, "image": image_file, "result": result}, fh)
+
+
 
     else:
         for filepath in glob.glob('generated/*.json'):

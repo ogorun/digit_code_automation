@@ -1,5 +1,6 @@
 from nltk.parse.corenlp import CoreNLPParser
 from word2number import w2n
+from word2number.w2n import american_number_system
 
 parser = CoreNLPParser()
 
@@ -45,6 +46,32 @@ def extract_condition_from_sentence(sentence):
                 return data
 
         return {'valid_and_placed': 0, 'valid_on_invalid_places': 0}
+
+
+def num2word(num):
+    return [word for word in american_number_system if american_number_system[word] == num][0]
+
+
+def number_constraint2sentence(number, is_right_placed):
+    assert number >= 0
+    number_word = num2word(number)
+    number_word_descriptor = 'number' + ('s' if  number > 1 else '')
+    verb = ('are' if number > 1 else 'is')
+    conjunction = ('and' if is_right_placed else 'but')
+    place_expression = ('well placed' if is_right_placed else 'wrong placed')
+    return ' '.join([number_word, number_word_descriptor, verb, 'correct', conjunction, place_expression])
+
+
+def constraint2sentence(constraint):
+    subsentences = []
+    if constraint['valid_and_placed'] == 0 and constraint['valid_on_invalid_places'] == 0:
+        return 'Nothing is correct'
+    if constraint['valid_and_placed'] > 0:
+        subsentences.append(number_constraint2sentence(constraint['valid_and_placed'], True))
+    if constraint['valid_on_invalid_places'] > 0:
+        subsentences.append(number_constraint2sentence(constraint['valid_on_invalid_places'], False))
+    sentence = ' and '.join(subsentences)
+    return sentence.capitalize()
 
 
 if __name__ == '__main__':
