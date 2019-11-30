@@ -1,4 +1,4 @@
-from test_detection_and_recognition import get_textual_connstraints_from_image
+from image_processing import get_textual_connstraints_from_image
 from sentence_parsing import extract_condition_from_sentence
 #from crack_code import crack_code
 from csp import backtrace_search, CSP

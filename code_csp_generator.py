@@ -1,7 +1,7 @@
 import random, json, glob
 from csp import CSP, backtrace_search, print_assignment, is_conflict
 from sentence_parsing import constraint2sentence, extract_condition_from_sentence
-from test_detection_and_recognition import constraint2image, get_textual_connstraints_from_image
+from image_processing import constraint2image, get_textual_connstraints_from_image
 
 
 def n_digits(n):
@@ -51,7 +51,7 @@ def solve_problem_from_image_file(image_path):
 
 
 if __name__ == '__main__':
-    to_generate = False
+    to_generate = True
 
     if to_generate:
         for i in range(10):
